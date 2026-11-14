@@ -12,6 +12,11 @@ constexpr float VERTICAL_SCROLLING_SPEED{ 100 };
 constexpr int VERTICAL_SCROLLING_GRID_SQUARE_SIZE{ 20 };
 std::vector<Rectangle> scrollingGrid;
 
+Rectangle playerShip;
+
+constexpr int NUM_ENEMIES{ 3 };
+std::vector<Rectangle> enemies;
+
 // Animation related variables
 float DT{ 0.01f };
 Uint64 startTime{ 0 };
@@ -53,6 +58,43 @@ void initScollingRectangles() {
     }
 }
 
+void initPlayerShip() {
+    playerShip.width = 50.0f;
+    playerShip.height = 50.0f;
+    playerShip.pos = glm::vec2(WINDOW_WIDTH / 2.0f, WINDOW_HEIGHT - playerShip.height / 2.0f);
+    playerShip.vel = glm::vec2(0.0f, 0.0f);
+    playerShip.color = SDL_Color{ 0, 255, 0, 255 };
+}
+
+float randomFloat(float minVal, float maxVal) {
+    return minVal + (static_cast<float>(rand()) / static_cast<float>(RAND_MAX)) * (maxVal - minVal);
+}
+
+void initEnemies() {
+    enemies.clear();
+
+    float sliceWidth = static_cast<float>(WINDOW_WIDTH) / NUM_ENEMIES;
+
+    for (int i = 0; i < NUM_ENEMIES; i++) {
+        Rectangle enemy;
+        enemy.width = 50.0f;
+        enemy.height = 50.0f;
+
+        // x: aleator in felia i (de lungime sliceWidth)
+        enemy.pos.x = randomFloat(i * sliceWidth + enemy.width / 2.0f,
+                                  (i + 1) * sliceWidth - enemy.width / 2.0f);
+
+        // y: aleator in jumatatea de sus a ferestrei
+        enemy.pos.y = randomFloat(enemy.height / 2.0f,
+                                  WINDOW_HEIGHT / 2.0f - enemy.height / 2.0f);
+
+        enemy.vel = glm::vec2(0.0f, 0.0f);
+        enemy.color = SDL_Color{ 255, 165, 0, 255 };  // portocaliu
+
+        enemies.push_back(enemy);
+    }
+}
+
 bool initWindow() {
     bool success{true};
 
@@ -62,11 +104,13 @@ bool initWindow() {
         success = false;
     } else {
         //Try to create the window and renderer
-        //displayScale = SDL_GetDisplayContentScale(0);
+        //displayScale = SDL_GetDisplayContentScale(1);
         displayScale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
         if (displayScale <= 0.0f) {
             displayScale = 1.0f;
         }
+
+        SDL_SetWindowRelativeMouseMode(window, true);
 
         if (!SDL_CreateWindowAndRenderer(
             "SDL Hello World Example",
@@ -117,6 +161,26 @@ void processEvents() {
                 mouseX /= displayScale;
                 mouseY /= displayScale;
                 std::cout << "Mouse move while left clicking => " << "x: " << mouseX << ", y: " << mouseY << std::endl;
+            }
+        }
+        
+        //Move the ship with the mouse
+        if (currentEvent.type == SDL_EVENT_MOUSE_MOTION) {
+            playerShip.pos.x += currentEvent.motion.xrel / displayScale;
+            playerShip.pos.y += currentEvent.motion.yrel / displayScale;
+
+            //Keep the ship inside the window
+            if (playerShip.pos.x < playerShip.width / 2.0f) {
+                playerShip.pos.x = playerShip.width / 2.0f;
+            }
+            if (playerShip.pos.x > WINDOW_WIDTH - playerShip.width / 2.0f) {
+                playerShip.pos.x = WINDOW_WIDTH - playerShip.width / 2.0f;
+            }
+            if (playerShip.pos.y < playerShip.height / 2.0f) {
+                playerShip.pos.y = playerShip.height / 2.0f;
+            }
+            if (playerShip.pos.y > WINDOW_HEIGHT - playerShip.height / 2.0f) {
+                playerShip.pos.y = WINDOW_HEIGHT - playerShip.height / 2.0f;
             }
         }
 
@@ -179,6 +243,11 @@ void drawFrame() {
         gridRectangle.draw(renderer);
     }
 
+    for (size_t i = 0; i < enemies.size(); i++) {
+        enemies[i].draw(renderer);
+    }
+
+    playerShip.draw(renderer);
     //Update window
     SDL_RenderPresent(renderer);
 }
@@ -209,7 +278,13 @@ int main() {
 
     SDL_zero(currentEvent);
 
+    srand(static_cast<unsigned int>(time(nullptr)));
+
+    initEnemies();
+
 	initScollingRectangles();
+
+    initPlayerShip();
 
     //Game loop
     while (!quit) {
