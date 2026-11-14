@@ -2,7 +2,7 @@
 #define RECTANGLE_H
 
 #include <SDL3/SDL.h>
-#include "glm/glm.hpp"
+#include "glm/glm/glm.hpp"
 
 struct Rectangle {
     glm::vec2 pos;

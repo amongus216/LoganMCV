@@ -62,7 +62,11 @@ bool initWindow() {
         success = false;
     } else {
         //Try to create the window and renderer
-        displayScale = SDL_GetDisplayContentScale(1);
+        //displayScale = SDL_GetDisplayContentScale(0);
+        displayScale = SDL_GetDisplayContentScale(SDL_GetPrimaryDisplay());
+        if (displayScale <= 0.0f) {
+            displayScale = 1.0f;
+        }
 
         if (!SDL_CreateWindowAndRenderer(
             "SDL Hello World Example",
